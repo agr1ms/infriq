@@ -4,7 +4,6 @@ import type { User } from "@prisma/client";
 export interface JwtPayload {
   sub: string;
   email: string;
-  type: "access" | "refresh";
 }
 
 export interface RequestWithUser extends Request {
