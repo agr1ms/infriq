@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import router from "./routes/router.js";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 
@@ -19,6 +20,7 @@ app.use(
 app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(express.json());
+app.use("/api", router);
 
 
 app.get("/health", (_req, res) => {
