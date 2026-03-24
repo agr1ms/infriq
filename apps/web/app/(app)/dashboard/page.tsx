@@ -8,7 +8,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export default function DashboardPage() {
@@ -17,8 +17,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     api
-      .get<Project[]>("/api/projects")
-      .then((res) => setProjects(res.data))
+      .get<{ success?: boolean; projects: Project[] }>("/api/projects")
+      .then((res) => setProjects(res.data.projects ?? []))
       .catch(() => setProjects([]))
       .finally(() => setLoading(false));
   }, []);

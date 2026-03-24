@@ -9,6 +9,7 @@ const projectRoute = Router({ mergeParams: true });
 projectRoute.use(authMiddleware);
 
 projectRoute.post("/create", validateBody(createProjectSchema), createProject);
+projectRoute.get("/", getAllProjects);
 projectRoute.get("/all", getAllProjects);
 projectRoute.get("/:id", getProjectById);
 projectRoute.put("/:id", validateBody(updateProjectSchema), updateProject);

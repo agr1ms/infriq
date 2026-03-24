@@ -21,13 +21,13 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true;
       try {
-        const { data } = await axios.post<{ accessToken: string }>(
+        const { data } = await axios.post<{ token: string }>(
           `${API_URL}/api/auth/refresh`,
           {},
           { withCredentials: true }
         );
-        setAccessToken(data.accessToken);
-        if (original.headers) original.headers.Authorization = `Bearer ${data.accessToken}`;
+        setAccessToken(data.token);
+        if (original.headers) original.headers.Authorization = `Bearer ${data.token}`;
         return api(original);
       } catch {
         clearAccessToken();

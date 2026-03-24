@@ -30,6 +30,7 @@ export const getAllProjectsService = async (userId: string) => {
             id: true,
             name: true,
             description: true,
+            createdAt: true,
         },
         orderBy: {
             updatedAt: "desc"

@@ -10,27 +10,27 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user }),
 
       login: async (email, password) => {
-        const { data } = await api.post<{ accessToken: string; user: User }>("/api/auth/login", {
+        const { data } = await api.post<{ token: string; user: User }>("/api/auth/login", {
           email,
           password,
         });
-        setAccessToken(data.accessToken);
+        setAccessToken(data.token);
         set({ user: data.user });
       },
 
       register: async (email, password, name) => {
-        const { data } = await api.post<{ accessToken: string; user: User }>("/api/auth/register", {
+        const { data } = await api.post<{ token: string; user: User }>("/api/auth/register", {
           email,
           password,
           name,
         });
-        setAccessToken(data.accessToken);
+        setAccessToken(data.token);
         set({ user: data.user });
       },
 
       refresh: async () => {
-        const { data } = await api.post<{ accessToken: string; user: User }>("/api/auth/refresh");
-        setAccessToken(data.accessToken);
+        const { data } = await api.post<{ token: string; user: User }>("/api/auth/refresh");
+        setAccessToken(data.token);
         set({ user: data.user });
       },
 
