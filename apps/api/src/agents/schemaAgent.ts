@@ -1,4 +1,5 @@
 import { getLLMClient } from "../llm/provider.js";
+import { jsonrepair } from "jsonrepair";
 
 interface GeneratedSchema {
   tables: Array<{
@@ -72,16 +73,28 @@ export async function runSchemaAgent(prdText: string): Promise<GeneratedSchema> 
     [{ role: "user", content: `Generate a relational database schema for this PRD:\n\n${prdText}` }],
     {
       system:
-        "You are a senior database architect. Produce a practical PostgreSQL-oriented schema draft.\n" +
-        "Use snake_case names, explicit foreign key relationships, and concise table purposes.\n" +
+        "You are an expert database architect. Produce a strictly minimal PostgreSQL schema.\n" +
+        "CRITICAL: Keep 'purpose' and 'constraints' under 5 words. Omit obvious constraints like 'NOT NULL'.\n" +
+        "DO NOT use whitespace formatting outside of strings. Output raw, minified JSON to save tokens.\n" +
         schemaOutputSpec,
       temperature: 0.2,
-      maxTokens: 3000,
+      maxTokens: 8192,
     }
   );
 
-  const jsonText = extractJsonObject(response.text);
-  const parsed: unknown = JSON.parse(jsonText);
+  let jsonText = extractJsonObject(response.text);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (err) {
+    try {
+      jsonText = jsonrepair(jsonText);
+      parsed = JSON.parse(jsonText);
+    } catch (repairErr) {
+      throw new Error(`Failed to parse schema. Length: ${jsonText.length}. Error: ${err}`);
+    }
+  }
+
   if (!isGeneratedSchema(parsed)) {
     throw new Error("Schema agent returned an invalid schema shape");
   }
