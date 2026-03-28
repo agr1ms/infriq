@@ -21,6 +21,8 @@ model Project {
   id        String   @id @default(cuid())
   name      String
   description String?
+  prdText          String? @db.Text
+  generatedSchema  Json?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
