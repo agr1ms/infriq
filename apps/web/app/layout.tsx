@@ -4,7 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "DBpilot — Database Schema from PRD",
+  title: "Infriq — Database Schema from PRD",
   description:
     "Turn product requirements into production-ready database schemas with AI-powered schema generation.",
 };

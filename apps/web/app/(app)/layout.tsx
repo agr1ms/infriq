@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <FiDatabase className="w-4 h-4 text-white" />
           </div>
           <Link href="/dashboard" className="font-semibold text-base text-gray-900 dark:text-white">
-            DBpilot
+            Infriq
           </Link>
         </div>
 

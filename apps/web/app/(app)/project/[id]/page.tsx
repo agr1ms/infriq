@@ -215,7 +215,7 @@ export default function ProjectPage() {
               <FiDatabase className="w-12 h-12 mb-4 text-gray-300 dark:text-gray-600" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No schema generated yet</h3>
               <p className="text-sm max-w-sm">
-                Enter your requirements on the left and click "Generate Schema" to see the magic happen.
+                Enter your requirements on the left and click &quot;Generate Schema&quot; to see the magic happen.
               </p>
             </div>
           ) : (

@@ -38,7 +38,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
               <FiDatabase className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold">DBpilot</span>
+            <span className="text-2xl font-bold">Infriq</span>
           </div>
           <h2 className="text-3xl font-bold leading-tight mb-4">
             Transform your PRD into production-ready database schemas
@@ -58,7 +58,7 @@ export default function LoginPage() {
               <FiDatabase className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900 dark:text-white">
-              DBpilot
+              Infriq
             </span>
           </div>
 

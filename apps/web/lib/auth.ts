@@ -5,7 +5,7 @@ import { AuthResponse, AuthState } from "@/types";
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       setUser: (user) => set({ user }),
 
@@ -43,6 +43,6 @@ export const useAuthStore = create<AuthState>()(
         }
       },
     }),
-    { name: "dbpilot-auth", partialize: (s) => ({ user: s.user }) }
+    { name: "infriq-auth", partialize: (s) => ({ user: s.user }) }
   )
 );

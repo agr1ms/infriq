@@ -24,7 +24,7 @@ app.use("/api", router);
 
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "dbpilot-api" });
+  res.json({ ok: true, service: "infriq-api" });
 });
 
 app.listen(port, () => {
