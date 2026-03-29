@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -12,10 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (user === undefined) return;
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    if (!user) router.push("/login");
   }, [user, router]);
 
   if (user === undefined || !user) {
@@ -26,6 +23,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
+
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 bg-gray-900 text-white flex flex-col">
@@ -34,24 +36,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             DBpilot
           </Link>
         </div>
-        <nav className="flex-1 p-2 space-y-1">
-          <Link href="/dashboard" className="block px-3 py-2 rounded-lg hover:bg-gray-800 text-gray-200">
+
+        <nav className="flex-1 p-2">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+          >
             Projects
           </Link>
         </nav>
+
         <div className="p-2 border-t border-gray-700">
           <p className="px-3 py-1 text-sm text-gray-400 truncate" title={user.email}>
             {user.email}
           </p>
           <button
             type="button"
-            onClick={() => logout().then(() => router.push("/login"))}
-            className="w-full mt-1 px-3 py-2 text-left text-sm rounded-lg hover:bg-gray-800 text-gray-300"
+            onClick={handleLogout}
+            className="w-full mt-1 px-3 py-2 text-left text-sm rounded-lg hover:bg-gray-800 text-gray-300 transition-colors"
           >
             Sign out
           </button>
         </div>
       </aside>
+
       <main className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-auto">{children}</main>
     </div>
   );

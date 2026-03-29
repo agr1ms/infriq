@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { api, clearAccessToken, setAccessToken } from "./api";
-import { AuthState, User } from "@/types";
+import { AuthResponse, AuthState } from "@/types";
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -10,7 +10,7 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user }),
 
       login: async (email, password) => {
-        const { data } = await api.post<{ token: string; user: User }>("/api/auth/login", {
+        const { data } = await api.post<AuthResponse>("/api/auth/login", {
           email,
           password,
         });
@@ -19,7 +19,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       register: async (email, password, name) => {
-        const { data } = await api.post<{ token: string; user: User }>("/api/auth/register", {
+        const { data } = await api.post<AuthResponse>("/api/auth/register", {
           email,
           password,
           name,
@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       refresh: async () => {
-        const { data } = await api.post<{ token: string; user: User }>("/api/auth/refresh");
+        const { data } = await api.post<AuthResponse>("/api/auth/refresh");
         setAccessToken(data.token);
         set({ user: data.user });
       },

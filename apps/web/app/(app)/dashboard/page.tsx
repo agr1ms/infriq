@@ -4,95 +4,96 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  createdAt?: string;
-}
+import type { Project, ProjectsResponse, CreateProjectResponse } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newProjectName, setNewProjectName] = useState("");
-  const [newProjectDesc, setNewProjectDesc] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectDesc, setProjectDesc] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
-  const fetchProjects = () => {
+  async function fetchProjects() {
     setLoading(true);
-    api
-      .get<{ success?: boolean; projects: Project[] }>("/api/projects")
-      .then((res) => setProjects(res.data.projects ?? []))
-      .catch(() => setProjects([]))
-      .finally(() => setLoading(false));
-  };
-
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProjectName.trim()) return;
-
-    setIsCreating(true);
     try {
-      const res = await api.post<{ success: boolean; project: Project }>("/api/projects/create", {
-        name: newProjectName,
-        description: newProjectDesc
+      const res = await api.get<ProjectsResponse>("/api/projects");
+      setProjects(res.data.projects ?? []);
+    } catch {
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateProject(e: React.FormEvent) {
+    e.preventDefault();
+    if (!projectName.trim()) return;
+
+    setCreating(true);
+    try {
+      const res = await api.post<CreateProjectResponse>("/api/projects/create", {
+        name: projectName,
+        description: projectDesc || undefined,
       });
       if (res.data.success && res.data.project) {
-        setIsModalOpen(false);
-        setNewProjectName("");
-        setNewProjectDesc("");
         router.push(`/project/${res.data.project.id}`);
       }
-    } catch (error) {
-      console.error("Failed to create project", error);
-      alert("Failed to create project");
+    } catch {
+      alert("Failed to create project. Please try again.");
     } finally {
-      setIsCreating(false);
+      setCreating(false);
     }
-  };
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setProjectName("");
+    setProjectDesc("");
+  }
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Projects</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition"
+          onClick={() => setModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
         >
           New Project
         </button>
       </div>
+
       {loading ? (
         <p className="text-gray-500">Loading projects...</p>
       ) : projects.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-12 text-center">
           <p className="text-gray-500 mb-4">No projects yet. Create one to get started.</p>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition"
+            onClick={() => setModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
           >
             Create Project
           </button>
         </div>
       ) : (
         <ul className="space-y-4">
-          {projects.map((p) => (
-            <li key={p.id}>
+          {projects.map((project) => (
+            <li key={project.id}>
               <Link
-                href={`/project/${p.id}`}
-                className="block p-5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                href={`/project/${project.id}`}
+                className="block p-5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                <span className="font-semibold text-lg text-gray-900 dark:text-white block">{p.name}</span>
-                {p.description && (
-                  <span className="mt-1 block text-sm text-gray-500">{p.description}</span>
+                <span className="font-semibold text-lg text-gray-900 dark:text-white block">{project.name}</span>
+                {project.description && (
+                  <span className="mt-1 block text-sm text-gray-500">{project.description}</span>
                 )}
               </Link>
             </li>
@@ -100,8 +101,7 @@ export default function DashboardPage() {
         </ul>
       )}
 
-      {/* Create Project Modal */}
-      {isModalOpen && (
+      {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-xl">
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create New Project</h2>
@@ -113,39 +113,41 @@ export default function DashboardPage() {
                 <input
                   type="text"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
                   placeholder="e.g. E-commerce App"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
+
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Description (Optional)
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  value={newProjectDesc}
-                  onChange={(e) => setNewProjectDesc(e.target.value)}
+                  value={projectDesc}
+                  onChange={(e) => setProjectDesc(e.target.value)}
                   placeholder="A brief description of your project..."
                   rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
+
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition"
-                  disabled={isCreating}
+                  onClick={closeModal}
+                  disabled={creating}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isCreating || !newProjectName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition disabled:opacity-50"
+                  disabled={creating || !projectName.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  {isCreating ? "Creating..." : "Create"}
+                  {creating ? "Creating..." : "Create"}
                 </button>
               </div>
             </form>

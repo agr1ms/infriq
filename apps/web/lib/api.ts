@@ -52,3 +52,13 @@ export function setAccessToken(token: string): void {
 export function clearAccessToken(): void {
   if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
 }
+
+type ApiErrorShape = { response?: { data?: { error?: string; message?: string } } };
+
+export function getErrorMessage(err: unknown, fallback = "Something went wrong"): string {
+  if (err && typeof err === "object" && "response" in err) {
+    const e = err as ApiErrorShape;
+    return e.response?.data?.error ?? e.response?.data?.message ?? fallback;
+  }
+  return fallback;
+}
