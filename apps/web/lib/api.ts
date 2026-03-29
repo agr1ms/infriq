@@ -31,7 +31,10 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         clearAccessToken();
-        if (typeof window !== "undefined") window.location.href = "/login";
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("dbpilot-auth");
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(err);
