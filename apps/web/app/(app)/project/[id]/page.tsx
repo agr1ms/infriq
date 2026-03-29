@@ -1,30 +1,81 @@
 "use client";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { api } from "@/lib/api";
+import type { GeneratedSchema } from "@dbpilot/shared-types";
+import { api, getErrorMessage } from "@/lib/api";
+import type { ProjectDetailResponse, GenerateSchemaResponse } from "@/types";
+import { SchemaTableCards } from "@/components/schema/SchemaTableCards";
 
-interface GenerateSchemaResponse {
-  success: boolean;
-  message: string;
-  schema: unknown;
+const SchemaErDiagram = dynamic(
+  () => import("@/components/er-diagram/SchemaErDiagram").then((m) => m.SchemaErDiagram),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[min(70vh,560px)] min-h-[360px] flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-500 text-sm">
+        Loading diagram…
+      </div>
+    ),
+  }
+);
+
+function isGeneratedSchema(value: unknown): value is GeneratedSchema {
+  if (!value || typeof value !== "object") return false;
+  const o = value as Record<string, unknown>;
+  return Array.isArray(o.tables) && Array.isArray(o.relationships);
 }
 
 export default function ProjectPage() {
   const params = useParams();
   const id = params?.id as string;
+
+  const [projectName, setProjectName] = useState<string | null>(null);
   const [prdText, setPrdText] = useState("");
+  const [generatedSchema, setGeneratedSchema] = useState<GeneratedSchema | null>(null);
+  const [rawSchemaJson, setRawSchemaJson] = useState("");
+
+  const [projectLoading, setProjectLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [responsePreview, setResponsePreview] = useState("");
 
-  const canSubmit = useMemo(() => prdText.trim().length >= 20 && !isSubmitting, [prdText, isSubmitting]);
+  const canSubmit = prdText.trim().length >= 20 && !isSubmitting;
 
-  async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+
+    setProjectLoading(true);
+    setError("");
+
+    api
+      .get<ProjectDetailResponse>(`/api/projects/${id}`)
+      .then((res) => {
+        if (cancelled) return;
+        const p = res.data.project;
+        setProjectName(p.name);
+        setPrdText(p.prdText ?? "");
+        if (p.generatedSchema && isGeneratedSchema(p.generatedSchema)) {
+          setGeneratedSchema(p.generatedSchema);
+          setRawSchemaJson(JSON.stringify(p.generatedSchema, null, 2));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load project.");
+      })
+      .finally(() => {
+        if (!cancelled) setProjectLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  async function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       const content = await file.text();
       setPrdText(content);
@@ -33,36 +84,47 @@ export default function ProjectPage() {
     } catch {
       setError("Could not read file. Please try a .txt or .md file.");
     } finally {
-      event.target.value = "";
+      e.target.value = "";
     }
   }
 
   async function handleGenerate() {
     setError("");
     setSuccessMessage("");
-    setResponsePreview("");
+    setRawSchemaJson("");
+    setGeneratedSchema(null);
     setIsSubmitting(true);
     try {
-      const { data } = await api.post<GenerateSchemaResponse>("/api/schema/generate", { prdText: prdText.trim() });
+      const { data } = await api.post<GenerateSchemaResponse>("/api/schema/generate", {
+        prdText: prdText.trim(),
+        projectId: id,
+      });
       setSuccessMessage(data.message || "Schema generated successfully.");
-      setResponsePreview(JSON.stringify(data.schema, null, 2));
-    } catch (err: unknown) {
-      const message =
-        err && typeof err === "object" && "response" in err
-          ? (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ??
-            (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.message ??
-            "Failed to generate schema"
-          : "Failed to generate schema";
-      setError(message);
+      setRawSchemaJson(JSON.stringify(data.schema, null, 2));
+      if (isGeneratedSchema(data.schema)) {
+        setGeneratedSchema(data.schema);
+      }
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to generate schema"));
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  if (projectLoading) {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500">Loading project…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Project {id}</h1>
-      <p className="text-gray-500 mt-2">Paste your PRD and generate the first schema draft.</p>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{projectName ?? "Project"}</h1>
+      <p className="text-gray-500 mt-2">
+        Paste your PRD and generate a schema draft. Saved PRD and schema reload when you open this page again.
+      </p>
 
       <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-4">
         <div className="space-y-2">
@@ -86,7 +148,13 @@ export default function ProjectPage() {
           >
             Upload .txt/.md
           </label>
-          <input id="prd-file" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" onChange={handleFileUpload} className="hidden" />
+          <input
+            id="prd-file"
+            type="file"
+            accept=".txt,.md,.markdown,text/plain,text/markdown"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
 
           <button
             type="button"
@@ -102,11 +170,47 @@ export default function ProjectPage() {
         {successMessage && <p className="text-sm text-green-600 dark:text-green-400">{successMessage}</p>}
       </div>
 
-      {responsePreview && (
-        <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Schema JSON (preview)</h2>
-          <pre className="text-xs overflow-auto text-gray-800 dark:text-gray-200">{responsePreview}</pre>
+      {generatedSchema && (
+        <div className="mt-8 space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Tables</h2>
+            <SchemaTableCards schema={generatedSchema} />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">ER Diagram</h2>
+            <SchemaErDiagram schema={generatedSchema} />
+          </div>
+
+          {generatedSchema.relationships.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Relationships</h2>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+                {generatedSchema.relationships.map((r, i) => (
+                  <li key={`${r.fromTable}-${r.toTable}-${i}`}>
+                    <span className="font-mono text-gray-800 dark:text-gray-200">{r.fromTable}</span>
+                    <span className="mx-1">.</span>
+                    <span className="font-mono">{r.fromColumn}</span>
+                    <span className="mx-2 text-gray-400">→</span>
+                    <span className="font-mono text-gray-800 dark:text-gray-200">{r.toTable}</span>
+                    <span className="mx-1">.</span>
+                    <span className="font-mono">{r.toColumn}</span>
+                    <span className="ml-2 text-indigo-600 dark:text-indigo-400">({r.type})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
+      )}
+
+      {rawSchemaJson && (
+        <details className="mt-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
+          <summary className="text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer">
+            Raw schema JSON
+          </summary>
+          <pre className="mt-3 text-xs overflow-auto text-gray-800 dark:text-gray-200">{rawSchemaJson}</pre>
+        </details>
       )}
     </div>
   );
