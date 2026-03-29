@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma/client";
 import { CreateProjectSchema, UpdateProjectSchema } from "../schemas/project.schema";
 
@@ -82,6 +83,24 @@ export const updateProjectService = async (id: string, userId: string, data: Upd
 
     return updatedProject;
 }
+
+export const saveProjectGeneratedSchema = async (
+  projectId: string,
+  userId: string,
+  prdText: string,
+  schema: Record<string, unknown>
+): Promise<void> => {
+  const result = await prisma.project.updateMany({
+    where: { id: projectId, userId },
+    data: {
+      prdText,
+      generatedSchema: schema as Prisma.InputJsonValue,
+    } as Prisma.ProjectUpdateManyMutationInput,
+  });
+  if (result.count === 0) {
+    throw new Error("Project not found");
+  }
+};
 
 export const deleteProjectService = async (id: string, userId: string) => {
     const project = await prisma.project.findFirst({
