@@ -8,8 +8,8 @@ import { getErrorMessage } from "@/lib/api";
 import { FiDatabase, FiAlertCircle, FiLoader } from "react-icons/fi";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@infriq.com");
+  const [password, setPassword] = useState("Admin@123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
