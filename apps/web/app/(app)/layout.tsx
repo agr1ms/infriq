@@ -82,16 +82,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             )}
           </div>
-          
-          <button
-            onClick={toggleSidebar}
-            className={`p-1.5 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors ${
-              isCollapsed ? "mx-auto" : ""
-            }`}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
-          </button>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-x-hidden">
@@ -116,6 +106,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="px-3 pb-4 space-y-1.5 overflow-hidden">
+          <button
+            onClick={toggleSidebar}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-gray-200 transition-all justify-center`}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
+          </button>
+
           <button
             type="button"
             onClick={toggleTheme}
