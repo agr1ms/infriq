@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../prisma/client.js";
 import type { JwtPayload } from "../types/index.js";
 
-const jwtSecret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET!;
+export const jwtSecret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET!;
 const jwtExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN ?? "7d";
 
 export const parseExpiresIn = (s: string): number => {
@@ -13,6 +13,10 @@ export const parseExpiresIn = (s: string): number => {
     const num = parseInt(n!, 10);
     const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
     return num * (multipliers[u!] ?? 3600);
+};
+
+export const verifyToken = (token: string): JwtPayload => {
+    return jwt.verify(token, jwtSecret) as unknown as JwtPayload;
 };
 
 export const signToken = (payload: JwtPayload): string => {

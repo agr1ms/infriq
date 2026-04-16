@@ -14,27 +14,58 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
     const original = err.config as typeof err.config & { _retry?: boolean };
+    
     if (err.response?.status === 401 && !original._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (original.headers) original.headers.Authorization = `Bearer ${token}`;
+            return api(original);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
       original._retry = true;
+      isRefreshing = true;
+
       try {
         const { data } = await axios.post<{ token: string }>(
           `${API_URL}/api/auth/refresh`,
           {},
           { withCredentials: true }
         );
-        setAccessToken(data.token);
-        if (original.headers) original.headers.Authorization = `Bearer ${data.token}`;
+        const { token } = data;
+        setAccessToken(token);
+        if (original.headers) original.headers.Authorization = `Bearer ${token}`;
+        processQueue(null, token);
         return api(original);
-      } catch {
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
         clearAccessToken();
         if (typeof window !== "undefined") {
-          localStorage.removeItem("dbpilot-auth");
+          localStorage.removeItem("infriq-auth");
           window.location.href = "/login";
         }
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
       }
     }
     return Promise.reject(err);
